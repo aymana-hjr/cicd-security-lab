@@ -11,3 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: echo "Pipeline OK"
+demo-risque:
+    runs-on: ubuntu-latest
+    env:
+      DEMO: ${{ secrets.DEMO_SECRET }}
+    steps:
+      - name: Un workflow modifié accède au secret
+        run: |
+          echo "Le workflow peut lire le secret."
+          echo "Longueur du secret : ${#DEMO} caractères"
+          echo "Valeur affichée dans les logs : $DEMO"
