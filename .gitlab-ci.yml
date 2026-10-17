@@ -1,0 +1,42 @@
+stages:
+  - checks
+  - image
+workflow: 
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+default:
+  tags:
+    - local-docker
+
+variables:
+  GIT_DEPTH: "0"
+secret-scan:
+  stage: checks
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
+  script:
+    - git config --global --add safe.directory "$CI_PROJECT_DIR"
+    - gitleaks detect --source . --verbose
+dependency-scan:
+  stage: checks
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+iac-scan:
+  stage: checks
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy config --severity HIGH,CRITICAL --exit-code 1 k8s/
+
+image-scan:
+  stage: image
+  image: docker:24.0.5
+  script:
+    - docker build -t app:$CI_COMMIT_SHORT_SHA .
+    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL --exit-code 1 app:$CI_COMMIT_SHORT_SHA
